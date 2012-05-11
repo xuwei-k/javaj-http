@@ -1,35 +1,36 @@
-name := "scalaj-http"
+name := "javaj-http"
 
-version := "0.3.1"
+version := "0.1-SNAPSHOT"
 
-organization := "org.scalaj"
+organization := "com.github.xuwei-k"
 
-scalaVersion := "2.9.1"
+scalaVersion := "2.9.2"
 
 libraryDependencies ++= Seq(
-  "commons-codec"        % "commons-codec"      % "1.5"           % "compile" withSources(),
-  "junit"                % "junit"              % "4.10"          % "test" withSources(),
-  "com.novocode"         % "junit-interface"    % "0.8"           % "test"
+  "commons-codec"        % "commons-codec"      % "1.5",
+  "junit"                % "junit"              % "4.10"          % "test",
+  "com.novocode"         % "junit-interface"    % "0.8"           % "test",
+  "org.functionaljava"   % "functionaljava"     % "3.0",
+  "org.projectlombok"    % "lombok"             % "0.11.0"
 )
 
-crossScalaVersions := Seq("2.8.0", "2.8.1", "2.9.1", "2.9.2")
+autoScalaLibrary := false
 
-publishTo <<= version { v: String =>
-  val nexus = "https://oss.sonatype.org/"
-  if (v.trim.endsWith("SNAPSHOT"))
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  else
-    Some("releases" at nexus + "service/local/staging/deploy/maven2")
+homepage := Some(url("https://github.com/xuwei-k/javaj-http"))
+
+publishTo := sys.env.get("MAVEN_DIRECTORY").map{ dir =>
+  Resolver.file("gh-pages",file(dir))(Patterns(true, Resolver.mavenStyleBasePattern))
 }
-
-publishMavenStyle := true
-
-publishArtifact in Test := false
 
 pomIncludeRepository := { x => false }
 
+publishArtifact in Test := false
+
+crossPaths := false
+
+licenses := Seq("Apache 2" -> url("https://github.com/xuwei-k/javaj-http/blob/master/LICENSE.txt"))
+
 pomExtra := (
-  <url>http://github.com/scalaj/scalaj-http</url>
   <licenses>
     <license>
       <name>Apache 2</name>
@@ -38,14 +39,7 @@ pomExtra := (
     </license>
   </licenses>
   <scm>
-    <url>git@github.com:scalaj/scalaj-http.git</url>
-    <connection>scm:git:git@github.com:scalaj/scalaj-http.git</connection>
+    <url>git@github.com:xuwei-k/javaj-http.git</url>
+    <connection>scm:git:git@github.com:xuwei-k/javaj-http.git</connection>
   </scm>
-  <developers>
-    <developer>
-      <id>hoffrocket</id>
-      <name>Jon Hoffman</name>
-      <url>http://github.com/hoffrocket</url>
-    </developer>
-  </developers>
 )

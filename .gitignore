@@ -1,11 +1,11 @@
 .DS_Store
 lib_managed
-project/boot/*
-project/build/target/*
 target
-log/*
+project/target
+project/project/target
 .idea/*
-*.tmproj
 *.iml
 *.ipr
-.sbtlib
+*.class
+*.jar
+*.swp
