@@ -75,10 +75,10 @@ public final class Http {
     public Request headers(List<P2> h){
       return new Request(method,exec,url, params, headers.append(h),options);
     }
-    public Request param(String key,String value){
+    public Request param(Object key,Object value){
       return new Request(method,exec,url,params.cons(p(key,value)),headers,options);
     }
-    public Request header(String key,String value){
+    public Request header(Object key,Object value){
       return new Request(method,exec,url,params, headers.cons(p(key,value)),options);
     }
     public Request options(HttpOptions.HttpOption... o){
