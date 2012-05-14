@@ -51,7 +51,7 @@ public final class Http {
   @ToString
   @AllArgsConstructor
   public static final class Request {
-    private static final List<P2<String,String>> nil = List.nil();
+    private static final List<P2> nil = List.nil();
     public static Request apply(HttpExec exec ,HttpUrl url ,String method){
       return new Request(method, exec, url, nil, nil, defaultOptions.cons(HttpOptions.method(method)));
     }
@@ -59,20 +59,20 @@ public final class Http {
     public final String                       method;
     public final HttpExec                     exec;
     public final HttpUrl                      url;
-    public final List<P2<String,String>>      params;
-    public final List<P2<String,String>>      headers;
+    public final List<P2>                     params;
+    public final List<P2>                     headers;
     public final List<HttpOptions.HttpOption> options;
 
-    public Request params(P2<String, String>... p){
+    public Request params(P2... p){
       return params(array2List(p));
     }
-    public Request params(List<P2<String,String>> p){
+    public Request params(List<P2> p){
       return new Request(method, exec,url, p, headers,options);
     }
-    public Request headers(P2<String,String>... h){
+    public Request headers(P2... h){
       return headers(array2List(h));
     }
-    public Request headers(List<P2<String,String>> h){
+    public Request headers(List<P2> h){
       return new Request(method,exec,url, params, headers.append(h),options);
     }
     public Request param(String key,String value){
@@ -133,7 +133,7 @@ public final class Http {
         final HttpURLConnection conn = (HttpURLConnection)c;
         conn.setInstanceFollowRedirects(true);
         for(val h:headers.reverse()){
-          conn.setRequestProperty(h._1(),h._2());
+          conn.setRequestProperty(h._1().toString(),h._2().toString());
         }
         for(val o:options.reverse()){
           o.e(conn);
@@ -279,17 +279,17 @@ public final class Http {
     }
   }
 
-  public static String toQs(final List<P2<String,String>> params){
+  public static String toQs(final List<P2> params){
     return OAuth.mkString(
-      params.map(new F<P2<String,String>,String>(){
-        public String f(P2<String,String> p){
-          return urlEncode(p._1()) + "=" + urlEncode(p._2());
+      params.map(new F<P2,String>(){
+        public String f(P2 p){
+          return urlEncode(p._1().toString()) + "=" + urlEncode(p._2().toString());
         }
       })
     ,"&");
   }
 
-  public static String appendQs(String url,List<P2<String,String>> params){
+  public static String appendQs(String url,List<P2> params){
     return
       url +
       (params.isEmpty() ?  "" : ( url.contains("?") ? "&" : "?" ) ) +
@@ -337,8 +337,8 @@ public final class Http {
         val out = new DataOutputStream(conn.getOutputStream());
 
         for(val p:req.params){
-          final String name = p._1();
-          final String value = p._2();
+          final String name = p._1().toString();
+          final String value = p._2().toString();
           out.writeBytes(Pref + Boundary + CrLf);
           out.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"");
           out.writeBytes(CrLf + CrLf + value.toString() + CrLf);

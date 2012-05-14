@@ -59,6 +59,12 @@ public final class OAuth {
     );
   }
 
+  public static final F<P2,P2<String,String>> objPair2stringPair = new F<P2,P2<String,String>>(){
+    public P2<String,String> f(final P2 o){
+      return p(o._1().toString(),o._2().toString());
+    }
+  };
+
   public static P2<List<P2<String,String>>,String> getSig(List<P2<String,String>> baseParams,Http.Request req,Token consumer,Option<Token> token,Option<String> verifier){
     final List<P2<String,String>> oauthParams =
       List.<P2<String,String>>list(
@@ -85,7 +91,9 @@ public final class OAuth {
 
     final String baseString = mkString(
       List.list(
-        req.method.toUpperCase(),normalizeUrl(req.url.f(req)),normalizeParams(req.params.append(oauthParams))
+        req.method.toUpperCase(),
+        normalizeUrl(req.url.f(req)),
+        normalizeParams(req.params.map(objPair2stringPair).append(oauthParams))
       ).map(percentEncode)
     ,"&");
 
