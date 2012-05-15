@@ -138,23 +138,19 @@ public final class Http {
           for(val o:options.reverse()){
             o.e(conn);
           }
-          val error = exec.f(this, conn);
-          if(error.isSome()){
-            return Either.left(error.some());
-          }else{
-            val result = processor.f(conn);
-            if(result.isRight()){
-              return result;
-            }else{
-              return Either.left(
-                (Exception)new HttpException(
-                  conn.getResponseCode(),
-                  conn.getResponseMessage(),
-                  tryParse(conn.getErrorStream(),readString)
-                )
-              );
-            }
-          }
+
+          return Either.joinRight(exec.f(this, conn).toEither(processor.f(conn)).swap());
+
+/*
+   TODO
+            return Either.left(
+              (Exception)new HttpException(
+                conn.getResponseCode(),
+                conn.getResponseMessage(),
+                tryParse(conn.getErrorStream(),readString)
+              )
+            );
+*/
         }else{
           return Either.left(new Exception(c + " is not HttpURLConnection"));
         }
