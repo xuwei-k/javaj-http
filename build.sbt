@@ -16,6 +16,8 @@ libraryDependencies ++= Seq(
 
 autoScalaLibrary := false
 
+javacOptions ++= Seq("-Xlint")
+
 homepage := Some(url("https://github.com/xuwei-k/javaj-http"))
 
 publishTo := sys.env.get("MAVEN_DIRECTORY").map{ dir =>
