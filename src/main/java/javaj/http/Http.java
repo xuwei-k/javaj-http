@@ -112,112 +112,143 @@ public final class Http {
 
     public URL getUrl(){ return url.f(this); };
 
-    public <T> T apply(final F<InputStream,T> parser )throws Exception{
+    public <T> Either<Exception,T> apply(final F<InputStream,Either<Exception,T>> parser ){
       return process(
-        new F<HttpURLConnection,T>(){
-          public T f(HttpURLConnection conn){
+        new F<HttpURLConnection,Either<Exception,T>>(){
+          public Either<Exception,T> f(HttpURLConnection conn){
             try{
               return tryParse(conn.getInputStream(), parser);
-            }catch(IOException e){
-              throw new Error(e);
+            }catch(Exception e){
+              return Either.left(e);
             }
           }
         }
       );
     }
 
-    public <T> T process(final F<HttpURLConnection,T> processor )throws Exception{
+    public <T> Either<Exception,T> process(final F<HttpURLConnection,Either<Exception,T>> processor ){
+      try{
+        final URLConnection c = url.f(this).openConnection();
+        if(c != null || c instanceof HttpURLConnection){
+          final HttpURLConnection conn = (HttpURLConnection)c;
+          conn.setInstanceFollowRedirects(true);
+          for(val h:headers.reverse()){
+            conn.setRequestProperty(h._1().toString(),h._2().toString());
+          }
+          for(val o:options.reverse()){
+            o.e(conn);
+          }
 
-      final URLConnection c = url.f(this).openConnection();
-      if(c != null || c instanceof HttpURLConnection){
-        final HttpURLConnection conn = (HttpURLConnection)c;
-        conn.setInstanceFollowRedirects(true);
-        for(val h:headers.reverse()){
-          conn.setRequestProperty(h._1().toString(),h._2().toString());
+          exec.f(this, conn);
+          try {
+            return processor.f(conn);
+          } catch(Exception e) {
+            return Either.left(
+              (Exception)new HttpException(
+                conn.getResponseCode(),
+                conn.getResponseMessage(),
+                tryParse(conn.getErrorStream(),readString)
+              )
+            );
+          }
+        }else{
+          return Either.left(new Exception(c + " is not HttpURLConnection"));
         }
-        for(val o:options.reverse()){
-          o.e(conn);
-        }
-
-        exec.f(this, conn);
-        try {
-          return processor.f(conn);
-        } catch(Exception e) {
-          throw new HttpException(
-            conn.getResponseCode(),
-            conn.getResponseMessage(),
-            tryParse(conn.getErrorStream(),readString)
-          );
-        }
-      }else{
-        throw new Exception(c + " is not HttpURLConnection");
+      }catch(Exception ex){
+        return Either.left(ex);
       }
     }
 
-    public int responseCode() throws Exception{
+    public Either<Exception,Integer> responseCode(){
       return process(
-        new F<HttpURLConnection,Integer>(){
-          public Integer f(HttpURLConnection conn){
+        new F<HttpURLConnection,Either<Exception,Integer>>(){
+          public Either<Exception,Integer> f(HttpURLConnection conn){
             try{
-              return conn.getResponseCode();
+              return Either.right(conn.getResponseCode());
             }catch(Exception e){
-              throw new Error(e);
+              return Either.left(e);
             }
           }
         }
       );
     }
 
-    public byte[] asBytes() throws Exception{ return apply(readBytes); }
+    public Either<Exception,byte[]> asBytes(){ return apply(readBytes); }
 
-    public String asString() throws Exception{ return apply(readString); }
+    public Either<Exception,String> asString(){ return apply(readString); }
 
 // TODO java xml library ...
 //    public asXml = apply(is => scala.xml.XML.load(is));
 
-    public List<P2<String,String>> asParams() throws Exception {
+    public Either<Exception,List<P2<String,String>>> asParams(){
       return
-      array2List(asString().split("&")).bind(
+      asString().right().map(
         new F<String,List<P2<String,String>>>(){
           public List<P2<String,String>> f(final String s){
-            final String[] a = s.split("=");
-            if(a.length == 2){
-              return List.list(p(urlDecode(a[0]), urlDecode(a[1])));
-            }else{
-              return List.nil();
-            }
+            return array2List(s.split("&")).bind(
+              new F<String,List<P2<String,String>>>(){
+                public List<P2<String,String>> f(final String s){
+                  final String[] a = s.split("=");
+                  if(a.length == 2){
+                    return List.list(p(urlDecode(a[0]), urlDecode(a[1])));
+                  }else{
+                    return List.nil();
+                  }
+                }
+              }
+            );
           }
         }
       );
     }
 
-    public HashMap<String,String> asParamMap() throws Exception {
-      final HashMap<String,String> map = HashMap.hashMap();
-      for(val p:asParams()){
-        map.set(p._1(),p._2());
-      }
-      return map;
+    public Either<Exception,HashMap<String,String>> asParamMap(){
+      return asParams().right().map(
+        new F<List<P2<String,String>>,HashMap<String,String>>(){
+          public HashMap<String,String> f(List<P2<String,String>> list){
+            final HashMap<String,String> map = HashMap.hashMap();
+            for(val p:list){
+              map.set(p._1(),p._2());
+            }
+            return map;
+          }
+        }
+      );
     };
 
-    public Token asToken() throws Exception {
-      final HashMap<String,String> params = asParamMap();
-      return new Token(params.get("oauth_token").some(),params.get("oauth_token_secret").some());
+    public Either<Exception,Token> asToken(){
+      return asParamMap().right().map(
+        new F<HashMap<String,String>,Token>(){
+          public Token f(HashMap<String,String> params){
+            return new Token(params.get("oauth_token").some(),params.get("oauth_token_secret").some());
+          }
+        }
+      );
     }
   }
 
-  public static <E> E tryParse(InputStream is ,F<InputStream,E> parser) throws IOException{
+  public static <E> Either<Exception,E> tryParse(InputStream is ,F<InputStream,Either<Exception,E>> parser){
+    Either<Exception,E> result = null;
     try {
-      return parser.f(is);
+      result = parser.f(is);
     } finally {
-      is.close();
+      try{
+        if(is != null){
+          is.close();
+        }
+      }catch(IOException e){
+        return Either.left((Exception)e);
+      }
     }
+    return result;
   }
 
   /**
    * [lifted from lift]
    */
-  public static final F<InputStream,String> readString = new F<InputStream,String>(){
-    public String f(InputStream is){
+  public static final F<InputStream,Either<Exception,String>> readString =
+  new F<InputStream,Either<Exception,String>>(){
+    public Either<Exception,String> f(InputStream is){
       try{
         final InputStreamReader in = new InputStreamReader(is, charset);
         final StringBuilder bos = new StringBuilder();
@@ -227,9 +258,9 @@ public final class Http {
         while((len = in.read(ba)) > 0){
           bos.append(ba, 0, len);
         }
-        return bos.toString();
+        return Either.right(bos.toString());
       }catch(Exception e){
-        throw new Error(e);
+        return Either.left(e);
       }
     }
   };
@@ -238,8 +269,9 @@ public final class Http {
    * [lifted from lift]
    * Read all data from a stream into an Array[Byte]
    */
-  public static F<InputStream,byte[]> readBytes = new F<InputStream,byte[]>(){
-    public byte[] f(final InputStream in){
+  public static F<InputStream,Either<Exception,byte[]>> readBytes =
+  new F<InputStream,Either<Exception,byte[]>>(){
+    public Either<Exception,byte[]> f(final InputStream in){
       try{
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         final byte[] ba = new byte[4096];
@@ -247,9 +279,9 @@ public final class Http {
         while((len = in.read(ba)) > 0){
           bos.write(ba, 0, len);
         }
-        return bos.toByteArray();
+        return Either.right(bos.toByteArray());
       }catch(Exception e){
-        throw new Error(e);
+        return Either.left(e);
       }
     }
   };
