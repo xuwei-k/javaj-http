@@ -26,13 +26,13 @@ public final class Http {
     return f.f(a).toList();
   }
 
-  public abstract static class HttpExec extends F2<Request,HttpURLConnection,Unit>{
-    public final Unit f(Request r,HttpURLConnection c){
+  public abstract static class HttpExec extends F2<Request,HttpURLConnection,Option<Exception>>{
+    public final Option<Exception> f(Request r,HttpURLConnection c){
       try{
         e(r,c);
-        return null;
+        return Option.none();
       }catch(Exception e){
-        throw new Error(e);
+        return Option.some(e);
       }
     }
     abstract void e(Request r,HttpURLConnection c) throws Exception;
@@ -138,18 +138,22 @@ public final class Http {
           for(val o:options.reverse()){
             o.e(conn);
           }
-
-          exec.f(this, conn);
-          try {
-            return processor.f(conn);
-          } catch(Exception e) {
-            return Either.left(
-              (Exception)new HttpException(
-                conn.getResponseCode(),
-                conn.getResponseMessage(),
-                tryParse(conn.getErrorStream(),readString)
-              )
-            );
+          val error = exec.f(this, conn);
+          if(error.isSome()){
+            return Either.left(error.some());
+          }else{
+            val result = processor.f(conn);
+            if(result.isRight()){
+              return result;
+            }else{
+              return Either.left(
+                (Exception)new HttpException(
+                  conn.getResponseCode(),
+                  conn.getResponseMessage(),
+                  tryParse(conn.getErrorStream(),readString)
+                )
+              );
+            }
           }
         }else{
           return Either.left(new Exception(c + " is not HttpURLConnection"));
