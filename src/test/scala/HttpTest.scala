@@ -33,10 +33,11 @@ class HttpTest {
     }
     val r = Http.Request.apply(getFunc, Http.noopHttpUrl("http://localhost"), "GET").options(HttpOptions.connTimeout(1234)).options(HttpOptions.readTimeout(1234))
     r.process(
-      new F[HttpURLConnection,Unit](){
-        def f(c:HttpURLConnection){
+      new F[HttpURLConnection,fj.data.Either[Exception,Unit]](){
+        def f(c:HttpURLConnection) = {
           assertEquals(c.getReadTimeout, 1234)
           assertEquals(c.getConnectTimeout, 1234)
+          fj.data.Either.right(fj.Unit.unit)
         }
       }
     )
