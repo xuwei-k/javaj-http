@@ -130,7 +130,7 @@ public final class Http {
 
       final URLConnection c = url.f(this).openConnection();
       if(c != null || c instanceof HttpURLConnection){
-        final HttpURLConnection conn = (HttpURLConnection)c;
+        val conn = (HttpURLConnection)c;
         conn.setInstanceFollowRedirects(true);
         for(val h:headers.reverse()){
           conn.setRequestProperty(h._1(),h._2());
@@ -180,7 +180,7 @@ public final class Http {
       array2List(asString().split("&")).bind(
         new F<String,List<P2<String,String>>>(){
           public List<P2<String,String>> f(final String s){
-            final String[] a = s.split("=");
+            val a = s.split("=");
             if(a.length == 2){
               return List.list(p(urlDecode(a[0]), urlDecode(a[1])));
             }else{
@@ -200,7 +200,7 @@ public final class Http {
     };
 
     public Token asToken() throws Exception {
-      final HashMap<String,String> params = asParamMap();
+      val params = asParamMap();
       return new Token(params.get("oauth_token").some(),params.get("oauth_token_secret").some());
     }
   }

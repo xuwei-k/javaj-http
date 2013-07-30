@@ -4,14 +4,15 @@ version := "0.1-SNAPSHOT"
 
 organization := "com.github.xuwei-k"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.10.2"
 
 libraryDependencies ++= Seq(
   "commons-codec"        % "commons-codec"      % "1.5",
   "junit"                % "junit"              % "4.10"          % "test",
   "com.novocode"         % "junit-interface"    % "0.8"           % "test",
-  "org.functionaljava"   % "functionaljava"     % "3.0",
-  "org.projectlombok"    % "lombok"             % "0.11.0"
+  "org.functionaljava"   % "functionaljava"     % "3.1",
+  "org.projectlombok"    % "lombok"             % "0.12.0",
+  "org.scala-lang"       % "scala-library"      % scalaVersion.value % "test"
 )
 
 autoScalaLibrary := false
