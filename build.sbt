@@ -4,7 +4,7 @@ version := "0.1-SNAPSHOT"
 
 organization := "com.github.xuwei-k"
 
-scalaVersion := "2.10.2"
+scalaVersion := "2.10.3"
 
 libraryDependencies ++= Seq(
   "commons-codec"        % "commons-codec"      % "1.5",
